@@ -1,1 +1,1 @@
-from,to,value,gas,hash,blockNumber,transactionIndex
+from,to,value,gas,hash,input,blockNumber,transactionIndex
