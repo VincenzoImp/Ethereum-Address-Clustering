@@ -45,41 +45,40 @@ def task(data):
                 t_status = tx["status"]
             except KeyError:
                 t_status = None
-            if t_status == 1 or t_status == None:
-                address_to_add = None
-                if store == "received" and use_untill == True:
-                    if tx["to"] in curr_level_address_set and tx["to"] in curr_level_address_df[curr_level_address_df["use_untill"]<=block_number]["address"].values:
-                        address_to_add = tx["from"]
-                elif store == "received" and use_untill == False:
-                    if tx["to"] in curr_level_address_set:
-                        address_to_add = tx["from"]
-                elif store == "sent" and use_untill == True:
-                    if tx["from"] in curr_level_address_set and tx["from"] in curr_level_address_df[curr_level_address_df["use_untill"]<=block_number]["address"].values:
-                        address_to_add = tx["to"]
-                elif store == "sent" and use_untill == False:
-                    if tx["from"] in curr_level_address_set:
-                        address_to_add = tx["to"]
-                elif store == "both" and use_untill == True:
-                    if tx["from"] in curr_level_address_set and tx["from"] in curr_level_address_df[curr_level_address_df["use_untill"]<=block_number]["address"].values:
-                        address_to_add = tx["to"]
-                    elif tx["to"] in curr_level_address_set and tx["to"] in curr_level_address_df[curr_level_address_df["use_untill"]<=block_number]["address"].values:
-                        address_to_add = tx["from"]
-                elif store == "both" and use_untill == False:
-                    if tx["from"] in curr_level_address_set:
-                        address_to_add = tx["to"]
-                    elif tx["to"] in curr_level_address_set:
-                        address_to_add = tx["from"]
-                if address_to_add != None:
-                    tx = {**tx, **w3.eth.get_transaction_receipt(transaction.hex())}
-                    with lock:
-                        with open(edgefile, "a", encoding="UTF8") as tx_file:
-                            tx_file.write("{},{},{},{},{},{},{},{},{}\n".format(
-                                tx["from"], tx["to"], tx["value"], tx["effectiveGasPrice"], tx["gasUsed"], tx["hash"].hex(), tx["input"][:10], tx["blockNumber"], new_level, t_status
-                                ))
-                    if address_to_add not in new_level_address_subset:
-                        new_level_address_subset.add(address_to_add)
-                        row = pd.DataFrame.from_dict({"address": [address_to_add], "use_untill": [block_number], "level": [new_level]})
-                        new_level_address_subdf = pd.concat([new_level_address_subdf, row], ignore_index=True)
+            address_to_add = None
+            if store == "received" and use_untill == True:
+                if tx["to"] in curr_level_address_set and tx["to"] in curr_level_address_df[curr_level_address_df["use_untill"]<=block_number]["address"].values:
+                    address_to_add = tx["from"]
+            elif store == "received" and use_untill == False:
+                if tx["to"] in curr_level_address_set:
+                    address_to_add = tx["from"]
+            elif store == "sent" and use_untill == True:
+                if tx["from"] in curr_level_address_set and tx["from"] in curr_level_address_df[curr_level_address_df["use_untill"]<=block_number]["address"].values:
+                    address_to_add = tx["to"]
+            elif store == "sent" and use_untill == False:
+                if tx["from"] in curr_level_address_set:
+                    address_to_add = tx["to"]
+            elif store == "both" and use_untill == True:
+                if tx["from"] in curr_level_address_set and tx["from"] in curr_level_address_df[curr_level_address_df["use_untill"]<=block_number]["address"].values:
+                    address_to_add = tx["to"]
+                elif tx["to"] in curr_level_address_set and tx["to"] in curr_level_address_df[curr_level_address_df["use_untill"]<=block_number]["address"].values:
+                    address_to_add = tx["from"]
+            elif store == "both" and use_untill == False:
+                if tx["from"] in curr_level_address_set:
+                    address_to_add = tx["to"]
+                elif tx["to"] in curr_level_address_set:
+                    address_to_add = tx["from"]
+            if address_to_add != None:
+                tx = {**tx, **w3.eth.get_transaction_receipt(transaction.hex())}
+                with lock:
+                    with open(edgefile, "a", encoding="UTF8") as tx_file:
+                        tx_file.write("{},{},{},{},{},{},{},{},{},{}\n".format(
+                            tx["from"], tx["to"], w3.fromWei(tx["value"], 'ether'), tx["effectiveGasPrice"], tx["gasUsed"], tx["hash"].hex(), tx["input"][:10], tx["blockNumber"], new_level, t_status
+                            ))
+                if address_to_add not in new_level_address_subset:
+                    new_level_address_subset.add(address_to_add)
+                    row = pd.DataFrame.from_dict({"address": [address_to_add], "use_untill": [block_number], "level": [new_level]})
+                    new_level_address_subdf = pd.concat([new_level_address_subdf, row], ignore_index=True)
     return new_level_address_subdf
 
 
