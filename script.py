@@ -13,5 +13,6 @@ for i, row in edge_df.iterrows():
     g.add_edge(row['from'], row['to'])
 
 
-networkx.write_gexf(g, 'graph.gexf')
+networkx.write_graphml(g, 'graph.graphml')
+
 
