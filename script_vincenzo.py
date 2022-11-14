@@ -9,17 +9,19 @@ w3 = None
 
 
 #ETH
-rpcfile = '/eth/eth_node/node/geth.ipc'
+rpc = '/eth/eth_node/node/geth.ipc'
+http = 'https://mainnet.infura.io/v3/e0a4e987f3ff4f4fa9aa21bb08f09ef5'
 datafile = 'data/one_day_exit_scam_eth.csv'
 edgefile = 'data/tx_eth.csv'
 nodefile = 'data/address_eth.csv'
 
 """
 #BSC
-rpcfile = "https://bsc-dataseed.binance.org/"
-datafile = 'one_day_exit_scam_bsc.csv'
-edgefile = 'tx_bsc.csv'
-nodefile = 'address_bsc.csv'
+rpc = ''
+http = 'https://bsc-dataseed.binance.org/'
+datafile = 'data/one_day_exit_scam_bsc.csv'
+edgefile = 'data/tx_bsc.csv'
+nodefile = 'data/address_bsc.csv'
 """
 
 def preprocessing(datafile):
@@ -106,9 +108,9 @@ def multi(address_df, chain, depth=2, mode="w", store="received", use_untill=Tru
     """
     global w3
     if chain == "eth":
-        w3 = Web3(Web3.IPCProvider(rpcfile))
+        w3 = Web3(Web3.HTTPProvider(http))
     elif chain == "bsc":
-        w3 = Web3(Web3.HTTPProvider(rpcfile))
+        w3 = Web3(Web3.HTTPProvider(http))
         w3.middleware_onion.inject(geth_poa_middleware, layer=0)
     if mode == "w":
         if "level" not in address_df.columns:
