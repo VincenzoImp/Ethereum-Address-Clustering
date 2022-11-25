@@ -49,12 +49,13 @@ def preprocessing():
         [["from", "block_number_remove"]].\
         rename({"from":"address", "block_number_remove":"use_untill"}, axis="columns")
     address_df["level"] = 0
+    address_df = address_df.astype({'address': str, 'use_untill':int, 'level':int})
     return address_df
 
 def task(parameters):
     start, lock, step, max_block_heigth, new_level, curr_level_address_set, curr_level_address_df = parameters
     new_level_address_subset = set()
-    new_level_address_subdf = pd.DataFrame.from_dict({"address": [], "use_untill": [], "level": []})
+    new_level_address_subdf = pd.DataFrame.from_dict({"address": [], "use_untill": [], "level": []}).astype({'address': str, 'use_untill':int, 'level':int})
     for block_number in range(start, min(start+step, max_block_heigth+1)):
         block = w3.eth.get_block(block_number)
         local_filtered_curr_level_addresses = curr_level_address_df[curr_level_address_df["use_untill"]>=block_number]["address"].values
@@ -70,11 +71,11 @@ def task(parameters):
                         ))
                 if address_to_add not in new_level_address_subset:
                     new_level_address_subset.add(address_to_add)
-                    row = pd.DataFrame.from_dict({"address": [address_to_add], "use_untill": [block_number], "level": [new_level]})
+                    row = pd.DataFrame.from_dict({"address": [address_to_add], "use_untill": [block_number], "level": [new_level]}).astype({'address': str, 'use_untill':int, 'level':int})
                     new_level_address_subdf = pd.concat([new_level_address_subdf, row], ignore_index=True)
     return new_level_address_subdf
 
-def multi(depth=2, store_mode ='w'):
+def multi(depth, store_mode ='w'):
     """
     depth: (int >=0) ultimo livello da archiviare compreso
     max_block_heigth e step sono due parametri da poter tarare con dei MA:
@@ -106,7 +107,7 @@ def multi(depth=2, store_mode ='w'):
             lock = manager.Lock()
             with Pool(core_number) as pool:
                 items = [(i, lock, step, max_block_heigth, new_level, curr_level_address_set, curr_level_address_df) for i in range(0, max_block_heigth+1, step)]
-                new_level_address_df = pd.DataFrame.from_dict({"address": [], "use_untill": [], "level": []})
+                new_level_address_df = pd.DataFrame.from_dict({"address":[], "use_untill":[], "level":[]}).astype({'address': str, 'use_untill':int, 'level':int})
                 for new_level_address_subdf in tqdm(pool.imap(task, items), total=len(items)):
                     new_level_address_df = pd.concat([new_level_address_df, new_level_address_subdf])
         #elimina da new_level_address_df tutte le righe con address ripeturi e con use_untill che non è massimo tra i doppioni
@@ -120,7 +121,7 @@ def multi(depth=2, store_mode ='w'):
         new_level_address_df.to_csv(data[chain]['nodefile'], mode="a", header=False, index=False)
         curr_level += 1
         curr_level_address_set = set(new_level_address_df["address"].values)
-        curr_level_address_df = new_level_address_df
+        curr_level_address_df = new_level_address_df.copy()
     return
 
 multi(depth=1, store_mode='w')
