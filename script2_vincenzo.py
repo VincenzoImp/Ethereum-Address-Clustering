@@ -7,7 +7,7 @@ import csv
 
 chain = 'eth'
 query_mode = 'rpc'
-core_number = 25
+core_number = 20
 chunk_size = 1000
 w3 = None
 data = {
@@ -66,6 +66,21 @@ def preprocessing():
     address_df = address_df.astype({'address': str, 'use_untill':int, 'level':int})
     return address_df
 
+def get_txstring(tx, new_level):
+    string = "{},{},{},{},{},{},{},{},{},{}".format(
+        tx["from"] if 'from' in tx.keys() else None, 
+        tx["to"] if 'to' in tx.keys() else None, 
+        tx["value"] if 'value' in tx.keys() else None, 
+        tx["effectiveGasPrice"] if 'effectiveGasPrice' in tx.keys() else None, 
+        tx["gasUsed"] if 'gasUsed' in tx.keys() else None, 
+        tx["hash"].hex() if 'hash' in tx.keys() else None, 
+        tx["input"][:10] if 'input' in tx.keys() else None, 
+        tx["blockNumber"] if 'blockNumber' in tx.keys() else None, 
+        new_level, 
+        tx["status"] if 'status' in tx.keys() else None
+    ).split(',')
+    return string
+
 def task(parameters):
     chunkID, max_block_heigth, new_level, curr_level_address_set, curr_level_address_df = parameters
     rows_to_write = []
@@ -75,13 +90,14 @@ def task(parameters):
         block = w3.eth.get_block(block_number)
         local_filtered_curr_level_addresses = curr_level_address_df[curr_level_address_df["use_untill"]>=block_number]["address"].values
         for transaction in block.transactions:
+        #for transaction in block.transactions[130:140]:
             tx = w3.eth.get_transaction(transaction.hex())
+            if 'to' not in tx.keys() and 'from' not in tx.keys(): continue
             if tx["to"] in curr_level_address_set and tx["to"] in local_filtered_curr_level_addresses:
                 address_to_add = tx["from"]
                 tx = {**tx, **w3.eth.get_transaction_receipt(transaction.hex())}
-                rows_to_write.append("{},{},{},{},{},{},{},{},{},{}".format(
-                    tx["from"], tx["to"], w3.fromWei(tx["value"], 'ether'), tx["effectiveGasPrice"], tx["gasUsed"], tx["hash"].hex(), tx["input"][:10], tx["blockNumber"], new_level, tx["status"]
-                ).split(','))
+                string = get_txstring(tx, new_level)
+                rows_to_write.append(string)
                 if address_to_add not in new_level_address_subset:
                     new_level_address_subset.add(address_to_add)
                     row = pd.DataFrame.from_dict({"address": [address_to_add], "use_untill": [block_number], "level": [new_level]}).astype({'address': str, 'use_untill':int, 'level':int})
@@ -117,10 +133,12 @@ def multi(depth, store_mode='w', log=True):
     curr_level_address_df = address_df.copy()
     while curr_level < depth:
         max_block_heigth = int(curr_level_address_df["use_untill"].max())
+        #max_block_heigth = 10613897
         new_level = curr_level + 1
         #generate new level of edges and nodes
         with Pool(core_number) as pool:
             items = [(chunkID, max_block_heigth, new_level, curr_level_address_set, curr_level_address_df) for chunkID in range(0, max_block_heigth+1, chunk_size)]
+            #items = [(chunkID, max_block_heigth, new_level, curr_level_address_set, curr_level_address_df) for chunkID in range(max_block_heigth-50, max_block_heigth+1, chunk_size)]
             new_level_address_df = pd.DataFrame.from_dict({"address":[], "use_untill":[], "level":[]}).astype({'address': str, 'use_untill':int, 'level':int})
             for chunkID, new_level_address_subdf in tqdm(pool.imap(task, items), total=len(items)):
                 new_level_address_df = pd.concat([new_level_address_df, new_level_address_subdf])
