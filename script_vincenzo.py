@@ -5,7 +5,7 @@ from multiprocessing import Pool, Manager
 from tqdm import tqdm
 
 chain = 'eth'
-query_mode = 'http'
+query_mode = 'rpc'
 core_number = 25
 w3 = None
 data = {
