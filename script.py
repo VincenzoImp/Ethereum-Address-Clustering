@@ -67,17 +67,18 @@ def preprocessing():
     return address_df
 
 def get_txstring(tx, new_level):
+    keys = tx.keys()
     string = "{},{},{},{},{},{},{},{},{},{}".format(
-        tx["from"] if 'from' in tx.keys() else None, 
-        tx["to"] if 'to' in tx.keys() else None, 
-        tx["value"] if 'value' in tx.keys() else None, 
-        tx["effectiveGasPrice"] if 'effectiveGasPrice' in tx.keys() else None, 
-        tx["gasUsed"] if 'gasUsed' in tx.keys() else None, 
-        tx["hash"].hex() if 'hash' in tx.keys() else None, 
-        tx["input"][:10] if 'input' in tx.keys() else None, 
-        tx["blockNumber"] if 'blockNumber' in tx.keys() else None, 
+        tx.get("from"), 
+        tx.get("to"), 
+        tx.get("value"), 
+        tx.get("effectiveGasPrice"), 
+        tx.get("gasUsed"), 
+        tx["hash"].hex() if 'hash' in keys else None, 
+        tx["input"][:10] if 'input' in keys else None, 
+        tx.get("blockNumber"), 
         new_level, 
-        tx["status"] if 'status' in tx.keys() else None
+        tx.get("status")
     ).split(',')
     return string
 
